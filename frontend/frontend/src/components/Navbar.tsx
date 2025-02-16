@@ -14,9 +14,11 @@ export default function Navbar() {
           <img src={logo} alt="Logo" style={{ height: "50px", marginRight: "10px" }} />
 
         </Typography>
-        <Button color="inherit" sx={{ justifyContent:"end" }} onClick={handleLogout}>
-          Logout
-        </Button>
+        <div className="d-flex justify-content-end">
+          <Button color="inherit" onClick={handleLogout}>
+            Logout
+          </Button>
+        </div>
       </Toolbar>
     </AppBar>
   );
