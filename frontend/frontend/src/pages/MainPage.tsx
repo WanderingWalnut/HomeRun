@@ -146,34 +146,46 @@ export default function MainPage() {
         </Paper>
 
         {/* Diamond Progress Panel */}
-        <Paper elevation={3} sx={{ width: "800px", height: "600px", p: 3, textAlign: "center" }}>
-          <Typography variant="h5" fontWeight="bold" mb={2}>
-            Progress
+        <Paper
+          elevation={3}
+          sx={{
+            width: "800px",
+            height: "600px",
+            p: 3,
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <Typography variant="h5" fontWeight="bold" mb={2} textAlign="center">
+            Progress ({progress}%)
           </Typography>
-          <DiamondProgress value={progress} size={200} strokeWidth={8} />
+          {/* Centering the diamond */}
+          <Box
+            sx={{
+              flexGrow: 1,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <DiamondProgress value={progress} size={400} strokeWidth={8} />
+          </Box>
           <Box display="flex" justifyContent="center" gap={2} mt={2}>
             <Button
               variant="contained"
               color="primary"
-              onClick={() =>
-                setProgress((prev) => Math.max(0, prev - 10))
-              }
+              onClick={() => setProgress((prev) => Math.max(0, prev - 10))}
             >
               Decrease
             </Button>
             <Button
               variant="contained"
               color="primary"
-              onClick={() =>
-                setProgress((prev) => Math.min(100, prev + 10))
-              }
+              onClick={() => setProgress((prev) => Math.min(100, prev + 10))}
             >
               Increase
             </Button>
           </Box>
-          <Typography variant="body1" mt={2}>
-            {progress}%
-          </Typography>
         </Paper>
       </Box>
     </Box>
