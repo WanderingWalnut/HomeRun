@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Box, Paper, CircularProgress, Typography, Button } from "@mui/material";
 import { motion } from "framer-motion";
+import Confetti from 'react-confetti';
 import Navbar from "../components/Navbar";
 import house from "../assets/house.png";
 
@@ -41,14 +42,7 @@ function DiamondProgress({ value = 0, size = 300, strokeWidth = 10 }) {
 }
 
 export default function MainPage() {
-  type Transaction = {
-    id: number;
-    description: string;
-    amount: number;
-    date: string;
-  };
-
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState(25);
 
@@ -62,6 +56,7 @@ export default function MainPage() {
   return (
     <Box>
       <Navbar />
+      {progress === 100 && <Confetti />} 
       <Box display="flex" justifyContent="center" gap={4} p={4}>
         <Paper elevation={3} sx={{ width: "500px", height: "600px", p: 3, borderRadius: "10px", backgroundColor: "white" }}>
           <Typography variant="h5" fontWeight="bold" mb={2} color="black">Recent Transactions</Typography>
