@@ -10,6 +10,9 @@ const mockTransactions = [
   { id: 2, description: "Paycheck Deposit", amount: 1500, date: "2025-02-14" },
   { id: 3, description: "Electric Bill", amount: -100, date: "2025-02-13" },
   { id: 4, description: "Amazon Purchase", amount: -75.5, date: "2025-02-12" },
+  { id: 5, description: "Amazon Purchase", amount: -75.5, date: "2025-02-12" },
+  { id: 6, description: "Amazon Purchase", amount: -75.5, date: "2025-02-12" },
+  { id: 7, description: "Amazon Purchase", amount: -75.5, date: "2025-02-12" }
 ];
 
 function DiamondProgress({ value = 0, size = 300, strokeWidth = 10 }) {
@@ -161,7 +164,7 @@ export default function MainPage() {
             width: "20%",
             p: 3,
             borderRadius: "10px",
-            backgroundColor: "#e3f2fd",
+            backgroundColor: "#f7e3b5",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -184,6 +187,7 @@ export default function MainPage() {
             p: 3,
             borderRadius: "10px",
             backgroundColor: "white",
+            overflowY: "auto", // Add this to make the content scrollable
           }}
         >
           <Typography variant="h5" fontWeight="bold" mb={2} color="black">
