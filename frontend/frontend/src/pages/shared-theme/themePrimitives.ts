@@ -241,33 +241,12 @@ export const getDesignTokens = (mode: PaletteMode) => {
 export const colorSchemes = {
   light: {
     palette: {
-      primary: {
-        light: brand[200],
-        main: brand[400],
-        dark: brand[700],
-        contrastText: brand[50],
-      },
-      info: {
-        light: brand[100],
-        main: brand[300],
-        dark: brand[600],
-        contrastText: gray[50],
-      },
-      warning: {
-        light: orange[300],
-        main: orange[400],
-        dark: orange[800],
-      },
-      error: {
-        light: red[300],
-        main: red[400],
-        dark: red[800],
-      },
-      success: {
-        light: green[300],
-        main: green[400],
-        dark: green[800],
-      },
+      // primary: {
+      //   light: brand[200],
+      //   main: brand[400],
+      //   dark: brand[700],
+      //   contrastText: brand[50],
+      // },
       grey: {
         ...gray,
       },
@@ -291,33 +270,12 @@ export const colorSchemes = {
   },
   dark: {
     palette: {
-      primary: {
-        contrastText: brand[50],
-        light: brand[300],
-        main: brand[400],
-        dark: brand[700],
-      },
-      info: {
-        contrastText: brand[300],
-        light: brand[500],
-        main: brand[700],
-        dark: brand[900],
-      },
-      warning: {
-        light: orange[400],
-        main: orange[500],
-        dark: orange[700],
-      },
-      error: {
-        light: red[400],
-        main: red[500],
-        dark: red[700],
-      },
-      success: {
-        light: green[400],
-        main: green[500],
-        dark: green[700],
-      },
+      // primary: {
+      //   contrastText: brand[50],
+      //   light: brand[300],
+      //   main: brand[400],
+      //   dark: brand[700],
+      // },
       grey: {
         ...gray,
       },
@@ -394,7 +352,7 @@ export const shape = {
   borderRadius: 8,
 };
 
-// @ts-ignore
+
 const defaultShadows: Shadows = [
   'none',
   'var(--template-palette-baseShadow)',
