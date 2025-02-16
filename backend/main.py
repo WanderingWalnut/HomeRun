@@ -77,7 +77,7 @@ async def get_accounts(data: AccessTokenRequest):
         request_body = AccountsGetRequest(access_token=access_token)
         response = plaid_client.accounts_get(request_body)
         accounts = response.to_dict().get("accounts", [])
-        # Filter for accounts where the subtype is "checking" or "savings"
+        # Filter for accounts with subtype "checking" or "savings"
         filtered_accounts = [acc for acc in accounts if acc.get("subtype") in ["checking", "savings"]]
         return JSONResponse(content={"accounts": filtered_accounts})
     except Exception as e:
@@ -85,22 +85,38 @@ async def get_accounts(data: AccessTokenRequest):
 
 @app.post("/api/get_transactions")
 async def get_transactions(data: AccessTokenRequest):
-    """Fetches and processes user transactions."""
+    """
+    Fetches transactions only from checking and savings accounts.
+    """
     try:
         access_token = data.access_token
         if not access_token:
             raise HTTPException(status_code=400, detail="Access token is required")
+        
+        # Retrieve account mapping (account_id -> subtype) for checking/savings accounts.
+        accounts_req = AccountsGetRequest(access_token=access_token)
+        accounts_response = plaid_client.accounts_get(accounts_req)
+        accounts = accounts_response.to_dict().get("accounts", [])
+        account_types = {acc["account_id"]: acc.get("subtype")
+                         for acc in accounts if acc.get("subtype") in ["checking", "savings"]}
+        
+        # Fetch transactions (last 30 days)
         transactions = fetch_transactions(access_token)
         if transactions is None:
             raise HTTPException(status_code=500, detail="Failed to fetch transactions")
-        # Here we separate transactions simply by category.
+        
+        # Filter transactions to include only those from our checking/savings accounts.
+        filtered_transactions = [txn for txn in transactions if txn.get("account_id") in account_types]
+        
+        # Separate transactions based on category.
         spending_transactions = []
         savings_transfers = []
-        for txn in transactions:
+        for txn in filtered_transactions:
             if "Transfer" in txn.get("category", []):
                 savings_transfers.append(txn)
             else:
                 spending_transactions.append(txn)
+        
         response_content = jsonable_encoder({
             "spending_transactions": spending_transactions,
             "savings_transfers": savings_transfers
@@ -112,26 +128,32 @@ async def get_transactions(data: AccessTokenRequest):
 @app.post("/api/update_progress")
 async def update_progress(data: AccessTokenRequest):
     """
-    Calculates the user's progress toward their weekly savings target.
-    It uses transaction data from the last 7 days and distinguishes between checking and savings accounts.
-      - For checking accounts, if spending is below the daily limit, the difference counts as savings.
-      - For savings accounts, any positive amount is treated as a direct savings deposit.
+    Calculates the user's progress toward their weekly savings target using transactions
+    only from checking and savings accounts.
+    
+    For checking accounts:
+      - Spending reduces the daily limit.
+      - If spending is below the daily limit (set at $50), the unused portion is counted as savings.
+    
+    For savings accounts:
+      - Any positive transaction amount is treated as a direct savings deposit.
+    
+    Weekly target is set at $250 (i.e., if the user saves $250 in a week, that's 1 home run).
+    The down payment (total target) is $20,000. Thus, the user needs 80 weekly home runs to hit the goal.
     """
     try:
         access_token = data.access_token
         if not access_token:
             raise HTTPException(status_code=400, detail="Access token is required")
         
-        # Fetch account details to get a mapping from account_id to subtype.
+        # Get account mapping for checking and savings.
         accounts_req = AccountsGetRequest(access_token=access_token)
         accounts_response = plaid_client.accounts_get(accounts_req)
         accounts = accounts_response.to_dict().get("accounts", [])
-        # Build a mapping only for checking and savings accounts.
-        account_types = {acc["account_id"]: acc.get("subtype") 
+        account_types = {acc["account_id"]: acc.get("subtype")
                          for acc in accounts if acc.get("subtype") in ["checking", "savings"]}
         
-        # Fetch transactions (last 30 days) and filter for the past 7 days,
-        # only including transactions from accounts in our mapping.
+        # Fetch transactions (last 30 days) and then filter for the past 7 days and our accounts.
         transactions = fetch_transactions(access_token)
         if transactions is None:
             raise HTTPException(status_code=500, detail="Failed to fetch transactions")
@@ -144,25 +166,34 @@ async def update_progress(data: AccessTokenRequest):
             if isinstance(txn_date_val, str):
                 txn_date = datetime.strptime(txn_date_val, "%Y-%m-%d").date()
             else:
-                txn_date = txn_date_val  # already a date object
+                txn_date = txn_date_val
             if txn_date >= week_ago and txn.get("account_id") in account_types:
                 weekly_transactions.append(txn)
         
         # Define parameters.
-        daily_limit = 50.0    # Example daily spending limit for checking accounts.
-        weekly_target = 250.0  # Weekly savings target.
+        daily_limit = 50.0         # Daily spending limit for checking accounts.
+        weekly_target = 250.0       # Weekly savings target (i.e., $250 saved = 1 home run for the week).
+        down_payment_target = 20000.0  # Overall target (e.g., down payment of $20,000).
         
-        # Calculate progress using account types.
-        progress = calculate_progress_with_accounts(weekly_transactions, daily_limit, weekly_target, account_types)
+        # Calculate progress.
+        progress = calculate_progress_with_accounts(weekly_transactions, daily_limit, weekly_target, account_types, down_payment_target)
         return JSONResponse(content=progress)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-def calculate_progress_with_accounts(transactions, daily_limit, weekly_target, account_types):
+def calculate_progress_with_accounts(transactions, daily_limit, weekly_target, account_types, down_payment_target):
     """
     Calculates progress using transactions and account types:
-      - For checking accounts: if spending (transactions with negative amounts) is below the daily limit, count the difference as "daily savings."
-      - For savings accounts: add any positive transaction amounts as savings transfers.
+      - For checking accounts: If the total spending in a day (absolute value) is below the daily limit,
+        the unused portion is considered savings.
+      - For savings accounts: Any positive transaction is added as a direct savings deposit.
+    
+    Returns:
+      - weekly_progress: Total savings accumulated in the week.
+      - weekly_home_runs: Number of "home runs" achieved this week (weekly_progress / weekly_target).
+      - weekly_progress_percentage: (weekly_progress / weekly_target) * 100.
+      - down_payment_target: Overall goal (e.g., $20,000).
+      - home_runs_needed: Total home runs required to hit the down payment target (down_payment_target / weekly_target).
     """
     from collections import defaultdict
     daily_spending = defaultdict(float)
@@ -173,36 +204,34 @@ def calculate_progress_with_accounts(transactions, daily_limit, weekly_target, a
         subtype = account_types.get(account_id)
         amount = txn.get("amount", 0)
         txn_date = txn.get("date")
-        # For savings accounts, count positive amounts as savings deposits.
         if subtype == "savings":
+            # For savings accounts, count positive amounts as savings deposits.
             if amount > 0:
                 savings_transfers += amount
         elif subtype == "checking":
-            # For checking, assume spending (negative amounts) reduces the daily limit.
-            # If spending is below the daily limit, the unused portion is "savings."
-            # We accumulate spending per day.
+            # For checking, accumulate spending per day.
             daily_spending[txn_date] += amount
 
     daily_savings = 0.0
-    # For each day, if spending (absolute value) is less than the limit, the difference is saved.
     for day, spending in daily_spending.items():
-        # Convert spending to a positive number. For instance, if spending is -30,
-        # then unused is 50 - 30 = 20.
         spending_abs = abs(spending)
         if spending_abs < daily_limit:
             daily_savings += (daily_limit - spending_abs)
     
-    total_progress = daily_savings + savings_transfers
-    # Define one "home run" as achieving 1/10th of the weekly target.
-    home_runs = total_progress / (weekly_target / 10)
-    progress_percentage = (total_progress / weekly_target) * 100
+    weekly_progress = daily_savings + savings_transfers
+    weekly_home_runs = weekly_progress / weekly_target
+    home_runs_needed = down_payment_target / weekly_target
+    weekly_progress_percentage = (weekly_progress / weekly_target) * 100
 
     return {
-        "total_progress": total_progress,
+        "weekly_progress": weekly_progress,
         "daily_savings": daily_savings,
         "savings_transfers": savings_transfers,
-        "home_runs": home_runs,
-        "progress_percentage": progress_percentage
+        "weekly_home_runs": weekly_home_runs,
+        "weekly_progress_percentage": weekly_progress_percentage,
+        "weekly_target": weekly_target,
+        "down_payment_target": down_payment_target,
+        "home_runs_needed": home_runs_needed
     }
 
 # Test writing to Firestore
