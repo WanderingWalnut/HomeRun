@@ -5,6 +5,16 @@
   text-align: center;
 }
 
+/* index.css or App.css */
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: #081c4a; /* Your desired background */
+}
+
+
 .logo {
   height: 6em;
   padding: 1.5em;
