@@ -65,6 +65,7 @@ export default function MainPage() {
   // Home Run Counter
   const [homeRunsLeft, setHomeRunsLeft] = useState<number>(weeksLeft);
   const [weeklySavings, setWeeklySavings] = useState<number>(0);
+  const [weeksGoalHit, setWeeksGoalHit] = useState<number>(0); // New state for tracking weeks goal hit
 
   useEffect(() => {
     setTimeout(() => {
@@ -79,28 +80,32 @@ export default function MainPage() {
       totalSaved += txn.amount;
     });
     setSavedAmount(totalSaved);
+
+    // Calculate weekly savings
+    const today = new Date();
+    const currentWeek = Math.floor(today.getTime() / (1000 * 60 * 60 * 24 * 7));
+    const lastSavedWeek = localStorage.getItem("lastSavedWeek");
+
+    if (lastSavedWeek && Number(lastSavedWeek) === currentWeek) {
+      // If it's the same week, accumulate savings
+      setWeeklySavings((prev) => prev + totalSaved);
+    } else {
+      // If it's a new week, reset weekly savings
+      localStorage.setItem("lastSavedWeek", String(currentWeek));
+      setWeeklySavings(totalSaved);
+    }
   }, [transactions]);
 
   const progress = Math.min(100, (savedAmount / downpaymentGoal) * 100);
 
   // Check if weekly target is met
   useEffect(() => {
-    const today = new Date();
-    const currentWeek = Math.floor(today.getTime() / (1000 * 60 * 60 * 24 * 7));
-
-    const lastSavedWeek = localStorage.getItem("lastSavedWeek");
-
-    if (lastSavedWeek && Number(lastSavedWeek) === currentWeek) {
-      return; // Don't reset if it's still the same week
-    }
-
-    localStorage.setItem("lastSavedWeek", String(currentWeek));
-
     if (weeklySavings >= weeklyTarget) {
       setHomeRunsLeft((prev) => Math.max(0, prev - 1));
       setWeeklySavings(0);
+      setWeeksGoalHit((prev) => prev + 1); // Increment weeks goal hit
     }
-  }, [weeklySavings]);
+  }, [weeklySavings, weeklyTarget]);
 
   return (
     <Box>
@@ -119,6 +124,13 @@ export default function MainPage() {
         </Box>
         <Typography variant="body1" color="textSecondary" mt={2}>
           Downpayment Goal: <strong>${downpaymentGoal.toLocaleString()}</strong> | Weeks Left: <strong>{homeRunsLeft}</strong> | Weekly Target: <strong>${weeklyTarget.toFixed(2)}</strong>
+        </Typography>
+      </Paper>
+
+      {/* Weekly Target Hit Section */}
+      <Paper elevation={3} sx={{ width: "80%", margin: "20px auto", p: 3, borderRadius: "10px", backgroundColor: "#e3f2fd" }}>
+        <Typography variant="h5" fontWeight="bold" mb={2} color="black" textAlign="center">
+          🎯 Weekly Target Hit: <strong>{weeksGoalHit}</strong> Weeks
         </Typography>
       </Paper>
 
