@@ -12,8 +12,8 @@ import Stack from '@mui/material/Stack';
 import MuiCard from '@mui/material/Card';
 import { styled } from '@mui/material/styles';
 import AppTheme from '../shared-theme/AppTheme';
-import ColorModeSelect from '../shared-theme/ColorModeSelect';
 import { Link as RouterLink } from "react-router-dom";
+import logo from '../../assets/logo.png';
 
 const Card = styled(MuiCard)(({ theme }) => ({
   display: 'flex',
@@ -119,8 +119,14 @@ export default function SignUp(props: { disableCustomTheme?: boolean }) {
   return (
     <AppTheme {...props}>
       <CssBaseline enableColorScheme />
-      <ColorModeSelect sx={{ position: 'fixed', top: '1rem', right: '1rem' }} />
       <SignUpContainer direction="column" justifyContent="space-between">
+        <div style={{ position: 'absolute', top: '1rem', left: '1rem' }}>
+          <img src={logo} alt="Icon" style={{
+            width: '70px',
+            height: '70px',
+            borderRadius: '8px'
+          }} />
+        </div>
         <Card variant="outlined">
           <Typography
             component="h1"

@@ -1,367 +1,96 @@
-// import React, { useState } from 'react';
-// import {
-//   AppBar,
-//   Toolbar,
-//   Typography,
-//   Box,
-//   Card,
-//   CardContent,
-// } from '@mui/material';
-// import { styled } from '@mui/material/styles';
+import React, { useState, useEffect } from "react";
+import { Box, Paper, CircularProgress, Typography, Button } from "@mui/material";
+import { motion } from "framer-motion";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import Navbar from "../components/Navbar"; // Import the Navbar component
 
-// /**
-//  * FANCY DIAMOND PROGRESS COMPONENT
-//  * Uses a gradient stroke with a subtle glow.
-//  */
-// function DiamondProgress({ value = 0, size = 300, strokeWidth = 10 }) {
-//   // Clamp value between 0–100
-//   const clampedValue = Math.min(100, Math.max(0, value));
+// Mock transaction data (Replace this with actual API call to backend fetching Plaid data)
+const mockTransactions = [
+  { id: 1, description: "Grocery Store", amount: -50.25, date: "2025-02-14" },
+  { id: 2, description: "Paycheck Deposit", amount: 1500, date: "2025-02-14" },
+  { id: 3, description: "Electric Bill", amount: -100, date: "2025-02-13" },
+  { id: 4, description: "Amazon Purchase", amount: -75.5, date: "2025-02-12" },
+];
 
-//   // Each side of the diamond is ~70.71; total perimeter ~282.84
-//   const DIAMOND_PERIMETER = 4 * Math.sqrt(50 ** 2 + 50 ** 2);
-//   // strokeDashoffset controls how much of the stroke is NOT shown
-//   const offset = DIAMOND_PERIMETER - (DIAMOND_PERIMETER * clampedValue) / 100;
+// Mock financial data for animation
+const mockChartData = [
+  { name: "Jan", savings: 500 },
+  { name: "Feb", savings: 750 },
+  { name: "Mar", savings: 300 },
+  { name: "Apr", savings: 900 },
+];
 
-//   return (
-//     <Box sx={{ width: size, height: size, mx: 'auto' }}>
-//       <svg
-//         width="100%"
-//         height="100%"
-//         viewBox="0 0 100 100"
-//         style={{ overflow: 'visible' }}
-//       >
-//         {/* DEFINITIONS: gradient + glow filter */}
-//         <defs>
-//           {/* Linear gradient from top-left (#FF6CAB) to bottom-right (#7366FF) */}
-//           <linearGradient id="diamondGradient" x1="0" y1="0" x2="1" y2="1">
-//             <stop offset="0%" stopColor="#FF6CAB" />
-//             <stop offset="100%" stopColor="#7366FF" />
-//           </linearGradient>
-
-//           {/* Glow filter */}
-//           <filter id="diamondGlow" x="-50%" y="-50%" width="200%" height="200%">
-//             {/* Blur the shape */}
-//             <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur" />
-//             {/* Merge the blur with the original stroke to create a glow */}
-//             <feMerge>
-//               <feMergeNode in="blur" />
-//               <feMergeNode in="SourceGraphic" />
-//             </feMerge>
-//           </filter>
-//         </defs>
-
-//         {/* Background stroke (light gray) */}
-//         <path
-//           d="M 50,0 L 100,50 L 50,100 L 0,50 Z"
-//           fill="none"
-//           stroke="#ccc"
-//           strokeWidth={strokeWidth}
-//           strokeLinejoin="round"
-//           strokeLinecap="round"
-//         />
-
-//         {/* Foreground stroke (gradient + glow) */}
-//         <path
-//           d="M 50,0 L 100,50 L 50,100 L 0,50 Z"
-//           fill="none"
-//           stroke="url(#diamondGradient)"   // Apply the linear gradient
-//           strokeWidth={strokeWidth}
-//           strokeLinejoin="round"
-//           strokeLinecap="round"
-//           strokeDasharray={DIAMOND_PERIMETER}
-//           strokeDashoffset={offset}
-//           filter="url(#diamondGlow)"        // Apply the glow filter
-//           style={{
-//             transition: 'stroke-dashoffset 0.4s ease',
-//           }}
-//         />
-//       </svg>
-//     </Box>
-//   );
-// }
-
-// /** 
-//  * MAIN CONTENT STYLING
-//  * Enough padding so content isn't hidden under the AppBar.
-//  */
-// const MainContent = styled('main')(({ theme }) => ({
-//   padding: theme.spacing(2),
-//   marginTop: theme.mixins.toolbar.minHeight,
+export default function MainPage() {
+  type Transaction = {
+    id: number;
+    description: string;
+    amount: number;
+    date: string;
+  };
   
-// }));
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
 
-// /**
-//  * DASHBOARD COMPONENT
-//  * Has a top AppBar, one dummy card, and a DiamondProgress card (fancy).
-//  */
-// function Dashboard() {
-//   // Track numeric progress (0–100)
-//   const [progress, setProgress] = useState(25);
-
-//   const handleIncrease = () => setProgress((prev) => Math.min(100, prev + 25));
-//   const handleDecrease = () => setProgress((prev) => Math.max(0, prev - 25));
-
-//   return (
-//     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-//       {/* TOP APP BAR (no sidebar) */}
-//       <AppBar position="fixed">
-//         <Toolbar>
-//           <Typography variant="h6" noWrap component="div">
-//             My Dashboard
-//           </Typography>
-//         </Toolbar>
-//       </AppBar>
-
-//       {/* MAIN CONTENT AREA */}
-//       <MainContent>
-//         {/* <Typography variant="h4" gutterBottom>
-//           Welcome to the Dashboard
-//         </Typography> */}
-
-//         <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-//           {/* Dummy Card #1 */}
-//           <Card elevation={0} sx={{ width: 300 }}>
-//             <CardContent>
-//               <Typography variant="h6">Card 1</Typography>
-//               <Typography variant="body2" color="text.secondary">
-//                 This is a dummy card. Put stats, charts, or any content here.
-//               </Typography>
-//             </CardContent>
-//           </Card>
-
-//           {/* Fancy Diamond Progress Card */}
-//           <Card elevation={0} sx={{ width: 900, height: 650, textAlign: 'center', p: 2 }}>
-//             <CardContent>
-//                 {/* <Typography variant="h4" gutterBottom>
-//                 Diamond Progress
-//                 </Typography> */}
-//               <DiamondProgress value={progress} />
-//               {/* <Typography variant="h6" sx={{ mt: 2 }}>
-//                 Current progress: {progress}%
-//               </Typography> */}
-//               <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 4 }}>
-//                 <Box
-//                   sx={{
-//                     p: 1,
-//                     backgroundColor: '#ccc',
-//                     borderRadius: 1,
-//                     cursor: 'pointer',
-//                     '&:hover': { backgroundColor: '#bbb' },
-//                   }}
-//                   onClick={handleDecrease}
-//                 >
-//                   Decrease
-//                 </Box>
-//                 <Box
-//                   sx={{
-//                     p: 1,
-//                     backgroundColor: '#ccc',
-//                     borderRadius: 1,
-//                     cursor: 'pointer',
-//                     '&:hover': { backgroundColor: '#bbb' },
-//                   }}
-//                   onClick={handleIncrease}
-//                 >
-//                   Increase
-//                 </Box>
-//               </Box>
-//             </CardContent>
-//           </Card>
-//         </Box>
-//       </MainContent>
-//     </Box>
-//   );
-// }
-
-// export default Dashboard;
-
-
-import React, { useState } from 'react';
-import {
-  AppBar,
-  Toolbar,
-  Typography,
-  Box,
-  Card,
-  CardContent,
-} from '@mui/material';
-import { styled } from '@mui/material/styles';
-
-/**
- * FANCY DIAMOND PROGRESS COMPONENT
- * Uses a gradient stroke with a subtle glow.
- */
-function DiamondProgress({ value = 0, size = 300, strokeWidth = 10 }) {
-  // Clamp value between 0–100
-  const clampedValue = Math.min(100, Math.max(0, value));
-
-  // Each side of the diamond is ~70.71; total perimeter ~282.84
-  const DIAMOND_PERIMETER = 4 * Math.sqrt(50 ** 2 + 50 ** 2);
-  // strokeDashoffset controls how much of the stroke is NOT shown
-  const offset = DIAMOND_PERIMETER - (DIAMOND_PERIMETER * clampedValue) / 100;
+  useEffect(() => {
+    // Simulate API Call
+    setTimeout(() => {
+      setTransactions(mockTransactions);
+      setLoading(false);
+    }, 1000);
+  }, []);
 
   return (
-    <Box sx={{ width: size, height: size, mx: 'auto' }}>
-      <svg
-        width="100%"
-        height="100%"
-        viewBox="0 0 100 100"
-        style={{ overflow: 'visible' }}
-      >
-        {/* DEFINITIONS: gradient + glow filter */}
-        <defs>
-          {/* Linear gradient from top-left (#FF6CAB) to bottom-right (#7366FF) */}
-          <linearGradient id="diamondGradient" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#FF6CAB" />
-            <stop offset="100%" stopColor="#7366FF" />
-          </linearGradient>
+    <Box>
+      {/* Navbar */}
+      <Navbar />
 
-          {/* Glow filter */}
-          <filter id="diamondGlow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-        </defs>
+      {/* Main Content */}
+      <Box display="flex" justifyContent="center" gap={4} p={4}>
+        {/* Transaction Notifications */}
+        <Paper elevation={3} sx={{ width: "400px", p: 3 }}>
+          <Typography variant="h5" fontWeight="bold" mb={2}>
+            Recent Transactions
+          </Typography>
+          {loading ? (
+            <CircularProgress />
+          ) : (
+            transactions.map((txn) => (
+              <motion.div
+                key={txn.id}
+                initial={{ opacity: 0, x: -50 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5 }}
+                style={{ marginBottom: "10px", padding: "8px", borderRadius: "5px", backgroundColor: txn.amount < 0 ? "#ffebee" : "#e8f5e9" }}
+              >
+                <Typography variant="body1" fontWeight="bold">
+                  {txn.description}
+                </Typography>
+                <Typography variant="body2" color={txn.amount < 0 ? "error" : "success.main"}>
+                  {txn.amount < 0 ? "-" : "+"}${Math.abs(txn.amount).toFixed(2)}
+                </Typography>
+                <Typography variant="caption" color="textSecondary">
+                  {txn.date}
+                </Typography>
+              </motion.div>
+            ))
+          )}
+        </Paper>
 
-        {/* Background stroke (light gray) */}
-        <path
-          d="M 50,0 L 100,50 L 50,100 L 0,50 Z"
-          fill="none"
-          stroke="#ccc"
-          strokeWidth={strokeWidth}
-          strokeLinejoin="round"
-          strokeLinecap="round"
-        />
-
-        {/* Foreground stroke (gradient + glow) */}
-        <path
-          d="M 50,0 L 100,50 L 50,100 L 0,50 Z"
-          fill="none"
-          stroke="url(#diamondGradient)" // Apply the linear gradient
-          strokeWidth={strokeWidth}
-          strokeLinejoin="round"
-          strokeLinecap="round"
-          strokeDasharray={DIAMOND_PERIMETER}
-          strokeDashoffset={offset}
-          filter="url(#diamondGlow)" // Apply the glow filter
-          style={{
-            transition: 'stroke-dashoffset 0.4s ease',
-          }}
-        />
-      </svg>
+        {/* Animated Chart for Financial Data */}
+        <Paper elevation={3} sx={{ width: "500px", height: "300px", p: 3 }}>
+          <Typography variant="h5" fontWeight="bold" mb={2}>
+            Savings Overview
+          </Typography>
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart data={mockChartData}>
+              <XAxis dataKey="name" stroke="#8884d8" />
+              <YAxis stroke="#8884d8" />
+              <Tooltip />
+              <Bar dataKey="savings" fill="#8884d8" animationDuration={800} />
+            </BarChart>
+          </ResponsiveContainer>
+        </Paper>
+      </Box>
     </Box>
   );
 }
-
-/** 
- * MAIN CONTENT STYLING
- * Provides padding and positions content below the AppBar.
- */
-const MainContent = styled('main')(({ theme }) => ({
-  padding: theme.spacing(2),
-  marginTop: theme.mixins.toolbar.minHeight,
-}));
-
-/**
- * PAGE CONTAINER
- * A full-page wrapper that applies the background color to the entire viewport.
- */
-const PageContainer = styled('div')({
-  width: '100vw',
-  minHeight: '100vh',
-  backgroundColor: '#081c4a', // Your desired background color
-});
-
-/**
- * DASHBOARD COMPONENT
- * Contains a top AppBar, a dummy card, and a Fancy DiamondProgress card.
- * Everything is wrapped in PageContainer.
- */
-function Dashboard() {
-  // Track numeric progress (0–100)
-  const [progress, setProgress] = useState(25);
-
-  const handleIncrease = () => setProgress((prev) => Math.min(100, prev + 25));
-  const handleDecrease = () => setProgress((prev) => Math.max(0, prev - 25));
-
-  return (
-    <PageContainer>
-      <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-        {/* TOP APP BAR */}
-        <AppBar position="fixed" sx={{ backgroundColor: '#081c4a', boxShadow: 'none' }}>
-          <Toolbar>
-            <Typography variant="h6" noWrap component="div" sx={{ color: '#081c4a' }}>
-              My Dashboard
-            </Typography>
-          </Toolbar>
-        </AppBar>
-
-        {/* MAIN CONTENT AREA */}
-        <MainContent>
-          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-            {/* Dummy Card with matching background */}
-            <Card elevation={0} sx={{ width: 300, backgroundColor: '#081c4a' }}>
-              <CardContent>
-                <Typography variant="h6" sx={{ color: '#FFFFFF' }}>
-                  Card 1
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#FFFFFF' }}>
-                  This is a dummy card. Put stats, charts, or any content here.
-                </Typography>
-              </CardContent>
-            </Card>
-
-            {/* Fancy Diamond Progress Card */}
-            <Card
-              elevation={0}
-              sx={{
-                width: 900,
-                height: 650,
-                textAlign: 'center',
-                p: 2,
-                backgroundColor: '#081c4a',
-              }}
-            >
-              <CardContent>
-                <DiamondProgress value={progress} />
-                <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 4 }}>
-                  <Box
-                    sx={{
-                      p: 1,
-                      backgroundColor: '#ccc',
-                      borderRadius: 1,
-                      cursor: 'pointer',
-                      '&:hover': { backgroundColor: '#bbb' },
-                      color: '#081c4a',
-                    }}
-                    onClick={handleDecrease}
-                  >
-                    Decrease
-                  </Box>
-                  <Box
-                    sx={{
-                      p: 1,
-                      backgroundColor: '#ccc',
-                      borderRadius: 1,
-                      cursor: 'pointer',
-                      '&:hover': { backgroundColor: '#bbb' },
-                      color: '#081c4a',
-                    }}
-                    onClick={handleIncrease}
-                  >
-                    Increase
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Box>
-        </MainContent>
-      </Box>
-    </PageContainer>
-  );
-}
-
-export default Dashboard;

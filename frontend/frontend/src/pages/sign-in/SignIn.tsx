@@ -12,7 +12,6 @@ import MuiCard from '@mui/material/Card';
 import { styled } from '@mui/material/styles';
 import ForgotPassword from './components/ForgotPassword';
 import AppTheme from '../shared-theme/AppTheme';
-import ColorModeSelect from '../shared-theme/ColorModeSelect';
 import { Link as RouterLink } from "react-router-dom";
 import logo from '../../assets/logo.png';
 
@@ -117,14 +116,12 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
       <CssBaseline enableColorScheme />
       <SignInContainer direction="column" justifyContent="space-between">
         <div style={{ position: 'absolute', top: '1rem', left: '1rem' }}>
-          {/* <Icon/> */}
           <img src={logo} alt="Icon" style={{
-            width: '50px',
-            height: '50px',
+            width: '70px',
+            height: '70px',
             borderRadius: '8px'
           }} />
         </div>
-        <ColorModeSelect sx={{ position: 'fixed', top: '1rem', right: '1rem' }} />
         <Card variant="outlined">
           <Typography
             component="h1"
