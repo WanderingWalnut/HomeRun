@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Box, Paper, CircularProgress, Typography, Button } from "@mui/material";
 import { motion } from "framer-motion";
 import Navbar from "../components/Navbar";
-import logo from "../assets/logo.png";
+import house from "../assets/house.png";
 
 const mockTransactions = [
   { id: 1, description: "Grocery Store", amount: -50.25, date: "2025-02-14" },
@@ -32,7 +32,7 @@ function DiamondProgress({ value = 0, size = 300, strokeWidth = 10 }) {
             </feMerge>
           </filter>
         </defs>
-        <image href={logo} x="0" y="10" height="70" width="100" opacity="1" />
+        <image href={house} x="-1" y="13" height="67" width="100" opacity="1" />
         <path d="M 50,0 L 100,50 L 50,100 L 0,50 Z" fill="none" stroke="#ccc" strokeWidth={strokeWidth} strokeLinejoin="round" strokeLinecap="round" />
         <path d="M 50,0 L 100,50 L 50,100 L 0,50 Z" fill="none" stroke="url(#diamondGradient)" strokeWidth={strokeWidth} strokeLinejoin="round" strokeLinecap="round" strokeDasharray={DIAMOND_PERIMETER} strokeDashoffset={offset} filter="url(#diamondGlow)" style={{ transition: "stroke-dashoffset 0.4s ease" }} />
       </svg>
@@ -83,7 +83,7 @@ export default function MainPage() {
         <Paper elevation={3} sx={{ width: "800px", height: "600px", p: 3, display: "flex", flexDirection: "column" }}>
           <Typography variant="h5" fontWeight="bold" mb={2} textAlign="center">Progress ({progress}%)</Typography>
           <Box sx={{ flexGrow: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <DiamondProgress value={progress} size={400} strokeWidth={8} />
+            <DiamondProgress value={progress} size={400} strokeWidth={7} />
           </Box>
           <Box display="flex" justifyContent="center" gap={2} mt={2}>
             <Button variant="contained" color="primary" onClick={() => setProgress((prev) => Math.max(0, prev - 10))}>Decrease</Button>
