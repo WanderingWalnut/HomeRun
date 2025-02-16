@@ -82,52 +82,96 @@ export default function MainPage() {
   const [weeklySavings, setWeeklySavings] = useState<number>(0);
   const [weeksGoalHit, setWeeksGoalHit] = useState<number>(0); // New state for tracking weeks goal hit
 
-  type Transaction = {
-    id: string | number;
-    name: string; // the transaction's name
-    merchant_name?: string;
-    category?: string[]; // array of category strings
-    amount: number;
-    date: string;
-  };
+// Define your Transaction type (you can place this outside your component)
+type Transaction = {
+  id: string | number;
+  name: string;
+  merchant_name?: string;
+  category?: string[];
+  amount: number;
+  date: string;
+};
 
-  // Fetch transactions from FastAPI on component mount.
-  useEffect(() => {
-    // Replace with your actual access token logic.
-    const accessToken = "access-sandbox-7984d143-7843-4a42-9c24-956f0fd2e1e5";
-    fetch("http://localhost:8000/api/get_transactions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ access_token: accessToken }),
+// Define a type for the raw Plaid transaction data
+type PlaidTransaction = {
+  transaction_id: string;
+  name: string;
+  merchant_name?: string;
+  category?: string[];
+  amount: number;
+  date: string;
+};
+
+useEffect(() => {
+  const accessToken = "access-sandbox-7984d143-7843-4a42-9c24-956f0fd2e1e5";
+  fetch("http://localhost:8000/api/get_transactions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ access_token: accessToken }),
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      // Define your dummy transactions (typed as Transaction[])
+      const dummyTransactions: Transaction[] = [
+        {
+          id: "dummy1",
+          name: "Paycheck",
+          merchant_name: "Home Depot",
+          category: ["Employer", "Brick & Mortar"],
+          amount: 1525.5,
+          date: "2025-02-10",
+        },
+        {
+          id: "dummy2",
+          name: "E-Transfer",
+          merchant_name: "Friend",
+          category: ["Test", "Dummy"],
+          amount: 100,
+          date: "2025-02-09",
+        },
+        // You can add more dummy transactions as needed.
+      ];
+
+      // Format the real transactions returned by the API.
+      let formatted: Transaction[] = [];
+      if (
+        data.spending_transactions &&
+        Array.isArray(data.spending_transactions)
+      ) {
+        formatted = (data.spending_transactions as PlaidTransaction[]).map(
+          (txn, index: number): Transaction => ({
+            id: txn.transaction_id || index,
+            name: txn.name || "No Name",
+            merchant_name: txn.merchant_name || "",
+            category: txn.category || [],
+            amount: txn.amount,
+            date: txn.date,
+          })
+        );
+      }
+
+      // Log for debugging
+      console.log("Formatted real transactions:", formatted);
+
+      // Merge dummy transactions regardless of real data length.
+      const transactionsWithDummies: Transaction[] = [
+        ...formatted,
+        ...dummyTransactions,
+      ];
+      console.log("Merged transactions (with dummies):", transactionsWithDummies);
+
+      setTransactions(transactionsWithDummies);
+      setLoading(false);
     })
-      .then((res) => res.json())
-      .then((data) => {
-        // In this example, we display the spending transactions.
-        // You can combine with savings_transfers if needed.
-        if (data.spending_transactions) {
-          const formatted = (data.spending_transactions as any[]).map(
-            (txn, index) => ({
-              id: txn.transaction_id || index,
-              // Use the "name" field from the JSON for the transaction name
-              name: txn.name || "No Name",
-              merchant_name: txn.merchant_name || "",
-              category: txn.category || [],
-              amount: txn.amount,
-              date: txn.date,
-            })
-          );
-          setTransactions(formatted);
-        }
+    .catch((err) => {
+      console.error("Error fetching transactions:", err);
+      setLoading(false);
+    });
+}, []);
 
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Error fetching transactions:", err);
-        setLoading(false);
-      });
-  }, []);
+
 
   // Calculate the total saved amount from transactions.
   useEffect(() => {
