@@ -1,9 +1,9 @@
 import firebase_admin
 from firebase_admin import credentials, firestore
 import os
+import logging
 
 # Enable debug logging
-import logging
 logging.basicConfig(level=logging.DEBUG)
 
 try:
@@ -11,7 +11,7 @@ try:
 
     # Specify the path to credentials.json
     cred_path = "/Users/naveed/HomeRun/backend/credentials.json"
-    
+
     # Check if credentials.json exists
     if not os.path.exists(cred_path):
         logging.error(f"Credentials file not found: {cred_path}")
@@ -19,11 +19,13 @@ try:
 
     logging.debug(f"Using credentials file at: {cred_path}")
 
-    # Initialize Firebase
-    cred = credentials.Certificate(cred_path)
-    firebase_admin.initialize_app(cred)
-    
-    logging.debug("Firebase initialized successfully!")
+    # Prevent multiple Firebase initializations
+    if not firebase_admin._apps:
+        cred = credentials.Certificate(cred_path)
+        firebase_admin.initialize_app(cred)
+        logging.debug("Firebase initialized successfully!")
+    else:
+        logging.debug("Firebase already initialized, skipping reinitialization.")
 
     # Initialize Firestore
     db = firestore.client()
@@ -32,4 +34,4 @@ try:
     print("✅ Firebase connection successful!")
 
 except Exception as e:
-    logging.error(f"Error initializing Firebase: {e}", exc_info=True)
+    logging.error(f"🔥 Error initializing Firebase: {e}", exc_info=True)
