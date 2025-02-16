@@ -14,6 +14,7 @@ from plaid.model.accounts_get_request import AccountsGetRequest
 from pydantic import BaseModel
 import requests
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
 
 
 app = FastAPI()
@@ -44,6 +45,9 @@ class CreateUserRequest(BaseModel):
 FIREBASE_API_KEY = os.getenv("FIREBASE_API_KEY")
 if not FIREBASE_API_KEY:
     raise Exception("FIREBASE_API_KEY is not set in your environment.")
+
+load_dotenv(dotenv_path="/Users/naveed/HomeRun/frontend/frontend/.env")
+
 
 # Pydantic model for login requests
 class LoginRequest(BaseModel):
@@ -145,16 +149,9 @@ async def get_transactions(data: AccessTokenRequest):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+# Update the update_progress endpoint
 @app.post("/api/update_progress")
 async def update_progress(data: UserRequest):
-    """
-    Calculates the user's weekly progress toward their savings target using Plaid transactions,
-    then stores that data in Firestore under the authenticated user's document.
-    
-    The request expects:
-      - access_token: the Plaid access token
-      - firebase_token: a Firebase ID token obtained after the user signs in
-    """
     try:
         # Verify Firebase token and get the UID
         decoded_token = auth.verify_id_token(data.firebase_token)
@@ -166,18 +163,19 @@ async def update_progress(data: UserRequest):
         if not access_token:
             raise HTTPException(status_code=400, detail="Access token is required")
         
-        # Retrieve account details from Plaid (checking/savings only)
+        # Retrieve account details
         accounts_req = AccountsGetRequest(access_token=access_token)
         accounts_response = plaid_client.accounts_get(accounts_req)
         accounts = accounts_response.to_dict().get("accounts", [])
         account_types = {acc["account_id"]: acc.get("subtype")
                          for acc in accounts if acc.get("subtype") in ["checking", "savings"]}
         
-        # Fetch transactions (last 30 days) and filter for the past 7 days from our accounts
+        # Fetch transactions
         transactions = fetch_transactions(access_token)
         if transactions is None:
             raise HTTPException(status_code=500, detail="Failed to fetch transactions")
         
+        # Filter for recent transactions
         today = datetime.now().date()
         week_ago = today - timedelta(days=7)
         weekly_transactions = []
@@ -190,15 +188,16 @@ async def update_progress(data: UserRequest):
             if txn_date >= week_ago and txn.get("account_id") in account_types:
                 weekly_transactions.append(txn)
         
-        # Define your parameters
-        daily_limit = 50.0          # Daily spending limit for checking accounts.
-        weekly_target = 250.0        # Weekly savings target.
-        down_payment_target = 20000.0  # Overall savings goal.
+        # Calculate progress
+        progress = calculate_progress_with_accounts(
+            weekly_transactions,
+            daily_limit=50.0,
+            weekly_target=250.0,
+            account_types=account_types,
+            down_payment_target=20000.0
+        )
         
-        # Calculate progress using your helper function
-        progress = calculate_progress_with_accounts(weekly_transactions, daily_limit, weekly_target, account_types, down_payment_target)
-        
-        # Store the Plaid data (progress, access token, timestamp) under the user's document in Firestore
+        # Update Firestore
         db.collection("users").document(uid).set({
             "plaid_progress": progress,
             "plaid_access_token": access_token,
@@ -214,25 +213,44 @@ def calculate_progress_with_accounts(transactions, daily_limit, weekly_target, a
     from collections import defaultdict
     daily_spending = defaultdict(float)
     savings_transfers = 0.0
+    
+    # Process transactions
     for txn in transactions:
         account_id = txn.get("account_id")
         subtype = account_types.get(account_id)
         amount = txn.get("amount", 0)
         txn_date = txn.get("date")
+        
         if subtype == "savings":
             if amount > 0:
                 savings_transfers += amount
         elif subtype == "checking":
             daily_spending[txn_date] += amount
+
+    # Calculate daily savings
     daily_savings = 0.0
+    simulated_transactions = []
+    
     for day, spending in daily_spending.items():
         spending_abs = abs(spending)
         if spending_abs < daily_limit:
-            daily_savings += (daily_limit - spending_abs)
+            day_savings = daily_limit - spending_abs
+            daily_savings += day_savings
+            
+            # Create simulated transaction for the day's savings
+            simulated_transactions.append({
+                "amount": day_savings,
+                "date": day,
+                "description": "Daily Savings",
+                "id": generate_transaction_id(day),
+                "type": "incoming"
+            })
+
     weekly_progress = daily_savings + savings_transfers
     weekly_home_runs = weekly_progress / weekly_target
     home_runs_needed = down_payment_target / weekly_target
     weekly_progress_percentage = (weekly_progress / weekly_target) * 100
+
     return {
         "weekly_progress": weekly_progress,
         "daily_savings": daily_savings,
@@ -241,22 +259,10 @@ def calculate_progress_with_accounts(transactions, daily_limit, weekly_target, a
         "weekly_progress_percentage": weekly_progress_percentage,
         "weekly_target": weekly_target,
         "down_payment_target": down_payment_target,
-        "home_runs_needed": home_runs_needed
+        "home_runs_needed": home_runs_needed,
+        "simulated_savings_transactions": simulated_transactions
     }
 
-@app.post("/api/create_user")
-async def create_user(request: CreateUserRequest):
-    """
-    Creates a new Firebase user with the provided email and password.
-    """
-    try:
-        user = auth.create_user(
-            email=request.email,
-            password=request.password
-        )
-        return JSONResponse(content={"uid": user.uid, "email": user.email})
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
     
 
 @app.post("/api/validate_user")

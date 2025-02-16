@@ -1,19 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { Box, Paper, CircularProgress, Typography, TextField } from "@mui/material";
+import {
+  Box,
+  Paper,
+  CircularProgress,
+  Typography,
+  TextField,
+} from "@mui/material";
 import { motion } from "framer-motion";
 import Confetti from "react-confetti";
 import Navbar from "../components/Navbar";
 import house from "../assets/house.png";
-
-const mockTransactions = [
-  { id: 1, description: "Grocery Store", amount: -50.25, date: "2025-02-14" },
-  { id: 2, description: "Paycheck Deposit", amount: 1500, date: "2025-02-14" },
-  { id: 3, description: "Electric Bill", amount: -100, date: "2025-02-13" },
-  { id: 4, description: "Amazon Purchase", amount: -75.5, date: "2025-02-12" },
-  { id: 5, description: "Amazon Purchase", amount: -75.5, date: "2025-02-12" },
-  { id: 6, description: "Amazon Purchase", amount: -75.5, date: "2025-02-12" },
-  { id: 7, description: "Amazon Purchase", amount: -75.5, date: "2025-02-12" }
-];
 
 function DiamondProgress({ value = 0, size = 300, strokeWidth = 10 }) {
   const clampedValue = Math.min(100, Math.max(0, value));
@@ -22,7 +18,12 @@ function DiamondProgress({ value = 0, size = 300, strokeWidth = 10 }) {
 
   return (
     <Box sx={{ width: size, height: size, mx: "auto" }}>
-      <svg width="100%" height="100%" viewBox="0 0 100 100" style={{ overflow: "visible" }}>
+      <svg
+        width="100%"
+        height="100%"
+        viewBox="0 0 100 100"
+        style={{ overflow: "visible" }}
+      >
         <defs>
           <linearGradient id="diamondGradient" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0%" stopColor="#FF6CAB" />
@@ -37,21 +38,32 @@ function DiamondProgress({ value = 0, size = 300, strokeWidth = 10 }) {
           </filter>
         </defs>
         <image href={house} x="-1" y="13" height="67" width="100" opacity="1" />
-        <path d="M 50,0 L 100,50 L 50,100 L 0,50 Z" fill="none" stroke="#ccc" strokeWidth={strokeWidth} strokeLinejoin="round" strokeLinecap="round" />
-        <path d="M 50,0 L 100,50 L 50,100 L 0,50 Z" fill="none" stroke="url(#diamondGradient)" strokeWidth={strokeWidth} strokeLinejoin="round" strokeLinecap="round" strokeDasharray={DIAMOND_PERIMETER} strokeDashoffset={offset} filter="url(#diamondGlow)" style={{ transition: "stroke-dashoffset 0.4s ease" }} />
+        <path
+          d="M 50,0 L 100,50 L 50,100 L 0,50 Z"
+          fill="none"
+          stroke="#ccc"
+          strokeWidth={strokeWidth}
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
+        <path
+          d="M 50,0 L 100,50 L 50,100 L 0,50 Z"
+          fill="none"
+          stroke="url(#diamondGradient)"
+          strokeWidth={strokeWidth}
+          strokeLinejoin="round"
+          strokeLinecap="round"
+          strokeDasharray={DIAMOND_PERIMETER}
+          strokeDashoffset={offset}
+          filter="url(#diamondGlow)"
+          style={{ transition: "stroke-dashoffset 0.4s ease" }}
+        />
       </svg>
     </Box>
   );
 }
 
 export default function MainPage() {
-  type Transaction = {
-    id: number;
-    description: string;
-    amount: number;
-    date: string;
-  };
-
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -70,13 +82,54 @@ export default function MainPage() {
   const [weeklySavings, setWeeklySavings] = useState<number>(0);
   const [weeksGoalHit, setWeeksGoalHit] = useState<number>(0); // New state for tracking weeks goal hit
 
+  type Transaction = {
+    id: string | number;
+    name: string; // the transaction's name
+    merchant_name?: string;
+    category?: string[]; // array of category strings
+    amount: number;
+    date: string;
+  };
+
+  // Fetch transactions from FastAPI on component mount.
   useEffect(() => {
-    setTimeout(() => {
-      setTransactions(mockTransactions);
-      setLoading(false);
-    }, 1000);
+    // Replace with your actual access token logic.
+    const accessToken = "access-sandbox-7984d143-7843-4a42-9c24-956f0fd2e1e5";
+    fetch("http://localhost:8000/api/get_transactions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ access_token: accessToken }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        // In this example, we display the spending transactions.
+        // You can combine with savings_transfers if needed.
+        if (data.spending_transactions) {
+          const formatted = (data.spending_transactions as any[]).map(
+            (txn, index) => ({
+              id: txn.transaction_id || index,
+              // Use the "name" field from the JSON for the transaction name
+              name: txn.name || "No Name",
+              merchant_name: txn.merchant_name || "",
+              category: txn.category || [],
+              amount: txn.amount,
+              date: txn.date,
+            })
+          );
+          setTransactions(formatted);
+        }
+
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Error fetching transactions:", err);
+        setLoading(false);
+      });
   }, []);
 
+  // Calculate the total saved amount from transactions.
   useEffect(() => {
     let totalSaved = 0;
     transactions.forEach((txn) => {
@@ -84,16 +137,14 @@ export default function MainPage() {
     });
     setSavedAmount(totalSaved);
 
-    // Calculate weekly savings
+    // Calculate weekly savings using local storage to track the week.
     const today = new Date();
     const currentWeek = Math.floor(today.getTime() / (1000 * 60 * 60 * 24 * 7));
     const lastSavedWeek = localStorage.getItem("lastSavedWeek");
 
     if (lastSavedWeek && Number(lastSavedWeek) === currentWeek) {
-      // If it's the same week, accumulate savings
       setWeeklySavings((prev) => prev + totalSaved);
     } else {
-      // If it's a new week, reset weekly savings
       localStorage.setItem("lastSavedWeek", String(currentWeek));
       setWeeklySavings(totalSaved);
     }
@@ -101,7 +152,7 @@ export default function MainPage() {
 
   const progress = Math.min(100, (savedAmount / downpaymentGoal) * 100);
 
-  // Check if weekly target is met
+  // Check if weekly target is met.
   useEffect(() => {
     if (weeklySavings >= weeklyTarget) {
       setHomeRunsLeft((prev) => Math.max(0, prev - 1));
@@ -153,7 +204,10 @@ export default function MainPage() {
             />
           </Box>
           <Typography variant="body1" color="textSecondary" mt={2}>
-            Downpayment Goal: <strong>${downpaymentGoal.toLocaleString()}</strong> | Weeks Left: <strong>{homeRunsLeft}</strong> | Weekly Target: <strong>${weeklyTarget.toFixed(2)}</strong>
+            Downpayment Goal:{" "}
+            <strong>${downpaymentGoal.toLocaleString()}</strong> | Weeks Left:{" "}
+            <strong>{homeRunsLeft}</strong> | Weekly Target:{" "}
+            <strong>${weeklyTarget.toFixed(2)}</strong>
           </Typography>
         </Paper>
 
@@ -187,7 +241,7 @@ export default function MainPage() {
             p: 3,
             borderRadius: "10px",
             backgroundColor: "white",
-            overflowY: "auto", // Add this to make the content scrollable
+            overflowY: "auto",
           }}
         >
           <Typography variant="h5" fontWeight="bold" mb={2} color="black">
@@ -195,7 +249,7 @@ export default function MainPage() {
           </Typography>
           {loading ? (
             <CircularProgress />
-          ) : (
+          ) : transactions.length > 0 ? (
             transactions.map((txn) => (
               <motion.div
                 key={txn.id}
@@ -210,13 +264,28 @@ export default function MainPage() {
                 }}
               >
                 <Typography variant="body1" fontWeight="bold">
-                  {txn.description}
+                  {txn.name}
                 </Typography>
+                {txn.merchant_name && (
+                  <Typography variant="body2" color="textSecondary">
+                    Merchant: {txn.merchant_name}
+                  </Typography>
+                )}
+                {txn.category && txn.category.length > 0 && (
+                  <Typography variant="body2" color="textSecondary">
+                    Category: {txn.category.join(" > ")}
+                  </Typography>
+                )}
                 <Typography variant="body2">
                   {txn.amount < 0 ? "-" : "+"}${Math.abs(txn.amount).toFixed(2)}
                 </Typography>
+                <Typography variant="caption" color="textSecondary">
+                  Date: {txn.date}
+                </Typography>
               </motion.div>
             ))
+          ) : (
+            <Typography>No transactions found.</Typography>
           )}
         </Paper>
 
