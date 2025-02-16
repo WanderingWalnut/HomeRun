@@ -13,7 +13,7 @@ import { styled } from '@mui/material/styles';
  * FANCY DIAMOND PROGRESS COMPONENT
  * Uses a gradient stroke with a subtle glow.
  */
-function DiamondProgress({ value = 0, size = 100, strokeWidth = 10 }) {
+function DiamondProgress({ value = 0, size = 300, strokeWidth = 10 }) {
   // Clamp value between 0–100
   const clampedValue = Math.min(100, Math.max(0, value));
 
@@ -129,9 +129,9 @@ function Dashboard() {
           </Card>
 
           {/* Fancy Diamond Progress Card */}
-          <Card sx={{ width: 300, textAlign: 'center', p: 2 }}>
+          <Card sx={{ width: 900, height: 650, textAlign: 'center', p: 2 }}>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
+              <Typography variant="h4" gutterBottom>
                 Diamond Progress
               </Typography>
               <DiamondProgress value={progress} />
