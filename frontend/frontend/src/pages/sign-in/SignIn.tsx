@@ -14,7 +14,7 @@ import ForgotPassword from './components/ForgotPassword';
 import AppTheme from '../shared-theme/AppTheme';
 import ColorModeSelect from '../shared-theme/ColorModeSelect';
 import { Link as RouterLink } from "react-router-dom";
-import { SitemarkIcon } from '../sign-up/components/CustomIcons';
+import logo from '../../assets/logo.png';
 
 const Card = styled(MuiCard)(({ theme }) => ({
   display: 'flex',
@@ -117,7 +117,12 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
       <CssBaseline enableColorScheme />
       <SignInContainer direction="column" justifyContent="space-between">
         <div style={{ position: 'absolute', top: '1rem', left: '1rem' }}>
-          <SitemarkIcon/>
+          {/* <Icon/> */}
+          <img src={logo} alt="Icon" style={{
+            width: '50px',
+            height: '50px',
+            borderRadius: '8px'
+          }} />
         </div>
         <ColorModeSelect sx={{ position: 'fixed', top: '1rem', right: '1rem' }} />
         <Card variant="outlined">
@@ -192,12 +197,12 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
               Forgot your password?
             </Link>
           </Box>
-            <Typography sx={{ textAlign: 'center' }}>
-              Don&apos;t have an account?{' '}
-              <Link component={RouterLink} to="/signup" variant="body2" sx={{ alignSelf: 'center' }}>
-                Sign up
-              </Link>
-            </Typography>
+          <Typography sx={{ textAlign: 'center' }}>
+            Don&apos;t have an account?{' '}
+            <Link component={RouterLink} to="/signup" variant="body2" sx={{ alignSelf: 'center' }}>
+              Sign up
+            </Link>
+          </Typography>
         </Card>
       </SignInContainer>
     </AppTheme>
