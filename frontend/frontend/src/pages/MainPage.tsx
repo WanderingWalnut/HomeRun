@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Box, Paper, CircularProgress, Typography, Button } from "@mui/material";
 import { motion } from "framer-motion";
 import Navbar from "../components/Navbar"; // Import the Navbar component
+import logoImage from "../assets/logo.png"; // Import your image
 
 // Mock transaction data (Replace this with actual API call to backend fetching Plaid data)
 const mockTransactions = [
@@ -16,31 +17,31 @@ const mockTransactions = [
  * Uses a gradient stroke with a subtle glow.
  */
 function DiamondProgress({ value = 0, size = 300, strokeWidth = 10 }) {
-  // Clamp value between 0–100
   const clampedValue = Math.min(100, Math.max(0, value));
-
-  // Each side of the diamond is ~70.71; total perimeter ~282.84
   const DIAMOND_PERIMETER = 4 * Math.sqrt(50 ** 2 + 50 ** 2);
-  // strokeDashoffset controls how much of the stroke is NOT shown
   const offset = DIAMOND_PERIMETER - (DIAMOND_PERIMETER * clampedValue) / 100;
 
   return (
-    <Box sx={{ width: size, height: size, mx: "auto" }}>
-      <svg
-        width="100%"
-        height="100%"
-        viewBox="0 0 100 100"
-        style={{ overflow: "visible" }}
-      >
-        {/* DEFINITIONS: gradient + glow filter */}
+    <Box sx={{ position: "relative", width: size, height: size, mx: "auto" }}>
+      <Box
+        component="img"
+        src={logoImage}
+        alt="Overlay"
+        sx={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          width: "60%",
+          zIndex: 0,
+        }}
+      />
+      <svg width="100%" height="100%" viewBox="0 0 100 100" style={{ overflow: "visible", position: "relative", zIndex: 1 }}>
         <defs>
-          {/* Linear gradient from top-left (#FF6CAB) to bottom-right (#7366FF) */}
           <linearGradient id="diamondGradient" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0%" stopColor="#FF6CAB" />
             <stop offset="100%" stopColor="#7366FF" />
           </linearGradient>
-
-          {/* Glow filter */}
           <filter id="diamondGlow" x="-50%" y="-50%" width="200%" height="200%">
             <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur" />
             <feMerge>
@@ -49,37 +50,12 @@ function DiamondProgress({ value = 0, size = 300, strokeWidth = 10 }) {
             </feMerge>
           </filter>
         </defs>
-
-        {/* Background stroke (light gray) */}
-        <path
-          d="M 50,0 L 100,50 L 50,100 L 0,50 Z"
-          fill="none"
-          stroke="#ccc"
-          strokeWidth={strokeWidth}
-          strokeLinejoin="round"
-          strokeLinecap="round"
-        />
-
-        {/* Foreground stroke (gradient + glow) */}
-        <path
-          d="M 50,0 L 100,50 L 50,100 L 0,50 Z"
-          fill="none"
-          stroke="url(#diamondGradient)"   // Apply the linear gradient
-          strokeWidth={strokeWidth}
-          strokeLinejoin="round"
-          strokeLinecap="round"
-          strokeDasharray={DIAMOND_PERIMETER}
-          strokeDashoffset={offset}
-          filter="url(#diamondGlow)"        // Apply the glow filter
-          style={{
-            transition: "stroke-dashoffset 0.4s ease",
-          }}
-        />
+        <path d="M 50,0 L 100,50 L 50,100 L 0,50 Z" fill="none" stroke="#ccc" strokeWidth={strokeWidth} />
+        <path d="M 50,0 L 100,50 L 50,100 L 0,50 Z" fill="none" stroke="url(#diamondGradient)" strokeWidth={strokeWidth} strokeDasharray={DIAMOND_PERIMETER} strokeDashoffset={offset} filter="url(#diamondGlow)" style={{ transition: "stroke-dashoffset 0.4s ease" }} />
       </svg>
     </Box>
   );
 }
-
 export default function MainPage() {
   type Transaction = {
     id: number;
