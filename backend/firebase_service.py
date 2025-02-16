@@ -1,16 +1,35 @@
 import firebase_admin
-from firebase_admin import credentials, firestore  # Use firestore if you're using Firestore
+from firebase_admin import credentials, firestore
 import os
 
-# Path to the credentials.json file
-cred_path = os.path.join(os.path.dirname(__file__), "credentials.json")
+# Enable debug logging
+import logging
+logging.basicConfig(level=logging.DEBUG)
 
-# Initialize Firebase Admin SDK
-if not firebase_admin._apps:
+try:
+    logging.debug("Starting Firebase initialization...")
+
+    # Specify the path to credentials.json
+    cred_path = "/Users/naveed/HomeRun/backend/credentials.json"
+    
+    # Check if credentials.json exists
+    if not os.path.exists(cred_path):
+        logging.error(f"Credentials file not found: {cred_path}")
+        raise FileNotFoundError("Firebase credentials file not found!")
+
+    logging.debug(f"Using credentials file at: {cred_path}")
+
+    # Initialize Firebase
     cred = credentials.Certificate(cred_path)
     firebase_admin.initialize_app(cred)
+    
+    logging.debug("Firebase initialized successfully!")
 
-# Initialize Firestore database (if using Firestore)
-db = firestore.client()
+    # Initialize Firestore
+    db = firestore.client()
+    logging.debug("Firestore database connection established!")
 
-print("Firebase connection successful!")
+    print("✅ Firebase connection successful!")
+
+except Exception as e:
+    logging.error(f"Error initializing Firebase: {e}", exc_info=True)
