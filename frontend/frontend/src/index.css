@@ -5,6 +5,16 @@
   box-sizing: border-box;
 }
 
+/* For Webkit browsers (Chrome, Edge, Safari) */
+::-webkit-scrollbar {
+  display: none;
+}
+
+/* For Firefox */
+html {
+  scrollbar-width: none;
+}
+
 /* Fix body styles so it doesn't override component layouts */
 body {
   display: flex;

@@ -57,7 +57,7 @@ export default function MainPage() {
   const [downpaymentPercent, setDownpaymentPercent] = useState<number>(20); // Default 20%
   const [years, setYears] = useState<number>(5); // Default 5 years to reach the goal
   const [savedAmount, setSavedAmount] = useState<number>(0);
-  
+
   const downpaymentGoal = (housePrice * downpaymentPercent) / 100;
   const weeksLeft = years * 52; // Total weeks to reach goal
   const weeklyTarget = downpaymentGoal / weeksLeft; // Weekly savings target
@@ -112,32 +112,80 @@ export default function MainPage() {
       <Navbar />
       {progress >= 100 && <Confetti />}
 
-      {/* User Goal Inputs */}
-      <Paper elevation={3} sx={{ width: "80%", margin: "20px auto", p: 3, borderRadius: "10px" }}>
-        <Typography variant="h5" fontWeight="bold" mb={2} color="black">
-          Set Your Home Buying Goal
-        </Typography>
-        <Box display="flex" gap={3}>
-          <TextField label="Total House Price ($)" type="number" fullWidth value={housePrice} onChange={(e) => setHousePrice(Number(e.target.value))} />
-          <TextField label="Downpayment (%)" type="number" fullWidth value={downpaymentPercent} onChange={(e) => setDownpaymentPercent(Number(e.target.value))} />
-          <TextField label="Years to Save" type="number" fullWidth value={years} onChange={(e) => setYears(Number(e.target.value))} />
-        </Box>
-        <Typography variant="body1" color="textSecondary" mt={2}>
-          Downpayment Goal: <strong>${downpaymentGoal.toLocaleString()}</strong> | Weeks Left: <strong>{homeRunsLeft}</strong> | Weekly Target: <strong>${weeklyTarget.toFixed(2)}</strong>
-        </Typography>
-      </Paper>
+      {/* Wrapper for Home Buying Goal and Weekly Target */}
+      <Box display="flex" justifyContent="center" gap={3} mt={10}>
+        {/* User Goal Inputs */}
+        <Paper
+          elevation={3}
+          sx={{
+            width: "80%",
+            p: 3,
+            borderRadius: "10px",
+          }}
+        >
+          <Typography variant="h5" fontWeight="bold" mb={2} color="black">
+            Set Your Home Buying Goal
+          </Typography>
+          <Box display="flex" gap={3}>
+            <TextField
+              label="Total House Price ($)"
+              type="number"
+              fullWidth
+              value={housePrice}
+              onChange={(e) => setHousePrice(Number(e.target.value))}
+            />
+            <TextField
+              label="Downpayment (%)"
+              type="number"
+              fullWidth
+              value={downpaymentPercent}
+              onChange={(e) => setDownpaymentPercent(Number(e.target.value))}
+            />
+            <TextField
+              label="Years to Save"
+              type="number"
+              fullWidth
+              value={years}
+              onChange={(e) => setYears(Number(e.target.value))}
+            />
+          </Box>
+          <Typography variant="body1" color="textSecondary" mt={2}>
+            Downpayment Goal: <strong>${downpaymentGoal.toLocaleString()}</strong> | Weeks Left: <strong>{homeRunsLeft}</strong> | Weekly Target: <strong>${weeklyTarget.toFixed(2)}</strong>
+          </Typography>
+        </Paper>
 
-      {/* Weekly Target Hit Section */}
-      <Paper elevation={3} sx={{ width: "80%", margin: "20px auto", p: 3, borderRadius: "10px", backgroundColor: "#e3f2fd" }}>
-        <Typography variant="h5" fontWeight="bold" mb={2} color="black" textAlign="center">
-          🎯 Weekly Target Hit: <strong>{weeksGoalHit}</strong> Weeks
-        </Typography>
-      </Paper>
+        {/* Weekly Target Hit Section */}
+        <Paper
+          elevation={3}
+          sx={{
+            width: "20%",
+            p: 3,
+            borderRadius: "10px",
+            backgroundColor: "#e3f2fd",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Typography variant="h5" fontWeight="bold" textAlign="center">
+            🎯 Weekly Target Hit: <strong>{weeksGoalHit}</strong> Weeks
+          </Typography>
+        </Paper>
+      </Box>
 
       {/* Main Content */}
-      <Box display="flex" justifyContent="center" gap={4} px={4}>
+      <Box display="flex" justifyContent="center" gap={4} px={4} mt={3}>
         {/* Transactions Panel */}
-        <Paper elevation={3} sx={{ width: "100%", height: "500px", p: 3, borderRadius: "10px", backgroundColor: "white" }}>
+        <Paper
+          elevation={3}
+          sx={{
+            width: "100%",
+            height: "440px",
+            p: 3,
+            borderRadius: "10px",
+            backgroundColor: "white",
+          }}
+        >
           <Typography variant="h5" fontWeight="bold" mb={2} color="black">
             Recent Transactions
           </Typography>
@@ -145,16 +193,31 @@ export default function MainPage() {
             <CircularProgress />
           ) : (
             transactions.map((txn) => (
-              <motion.div key={txn.id} initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }} style={{ marginBottom: "10px", padding: "10px", borderRadius: "8px", backgroundColor: txn.amount < 0 ? "#ffebee" : "#e8f5e9" }}>
-                <Typography variant="body1" fontWeight="bold">{txn.description}</Typography>
-                <Typography variant="body2">{txn.amount < 0 ? "-" : "+"}${Math.abs(txn.amount).toFixed(2)}</Typography>
+              <motion.div
+                key={txn.id}
+                initial={{ opacity: 0, x: -50 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5 }}
+                style={{
+                  marginBottom: "10px",
+                  padding: "10px",
+                  borderRadius: "8px",
+                  backgroundColor: txn.amount < 0 ? "#ffebee" : "#e8f5e9",
+                }}
+              >
+                <Typography variant="body1" fontWeight="bold">
+                  {txn.description}
+                </Typography>
+                <Typography variant="body2">
+                  {txn.amount < 0 ? "-" : "+"}${Math.abs(txn.amount).toFixed(2)}
+                </Typography>
               </motion.div>
             ))
           )}
         </Paper>
 
         {/* Progress Panel */}
-        <Paper elevation={3} sx={{ width: "800px", height: "500px", p: 3 }}>
+        <Paper elevation={3} sx={{ width: "800px", height: "440px", p: 3 }}>
           <Typography variant="h5" fontWeight="bold" mb={2} textAlign="center">
             Progress ({progress.toFixed(2)}%)
           </Typography>

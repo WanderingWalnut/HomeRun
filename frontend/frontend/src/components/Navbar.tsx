@@ -9,7 +9,7 @@ export default function Navbar() {
 
   return (
     <AppBar
-      position="fixed"
+      position="absolute"
       sx={{
         top: 0, left: 0, width: "100%", zIndex: 1100,
         bgcolor: "black",
@@ -32,18 +32,5 @@ export default function Navbar() {
         </div>
       </Toolbar>
     </AppBar>
-    // <AppBar position="fixed" sx={{ top: 0, left: 0, width: "100%", zIndex: 1100, bgcolor: "black" }}>
-    //   <Toolbar>
-    //     <Typography variant="h6" sx={{ flexGrow: 1, display: "flex", alignItems: "center" }}>
-    //       <img src={logo} alt="Logo" style={{ height: "50px", marginRight: "10px" }} />
-
-    //     </Typography>
-    //     <div className="d-flex justify-content-end">
-    //       <Button color="inherit" onClick={handleLogout}>
-    //         Logout
-    //       </Button>
-    //     </div>
-    //   </Toolbar>
-    // </AppBar>
   );
 }
