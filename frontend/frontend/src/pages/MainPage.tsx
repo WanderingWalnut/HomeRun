@@ -108,10 +108,11 @@ export default function MainPage() {
       {/* Main Content */}
       <Box display="flex" justifyContent="center" gap={4} p={4}>
         {/* Transaction Notifications */}
-        <Paper elevation={3} sx={{ width: "500px", height: "600px", p: 3 }}>
-          <Typography variant="h5" fontWeight="bold" mb={2}>
+        <Paper elevation={3} sx={{ width: "500px", height: "600px", p: 3, borderRadius: "10px", backgroundColor: "white" }}>
+          <Typography variant="h5" fontWeight="bold" mb={2} color="black">
             Recent Transactions
           </Typography>
+
           {loading ? (
             <CircularProgress />
           ) : (
@@ -122,28 +123,32 @@ export default function MainPage() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.5 }}
                 style={{
-                  marginBottom: "10px",
-                  padding: "8px",
-                  borderRadius: "5px",
+                  display: "flex",
+                  alignItems: "center",
+                  marginBottom: "12px",
+                  padding: "12px",
+                  borderRadius: "8px",
                   backgroundColor: txn.amount < 0 ? "#ffebee" : "#e8f5e9",
+                  boxShadow: "0px 2px 5px rgba(0, 0, 0, 0.1)",
                 }}
               >
-                <Typography variant="body1" fontWeight="bold">
-                  {txn.description}
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color={txn.amount < 0 ? "error" : "success.main"}
-                >
-                  {txn.amount < 0 ? "-" : "+"}${Math.abs(txn.amount).toFixed(2)}
-                </Typography>
-                <Typography variant="caption" color="textSecondary">
-                  {txn.date}
-                </Typography>
+                <i
+                  className={txn.amount < 0 ? "bi bi-cart-x text-danger" : "bi bi-wallet text-success"}
+                  style={{ fontSize: "18px", marginRight: "12px" }}
+                ></i>
+
+                <Box>
+                  <Typography variant="body1" fontWeight="bold">{txn.description}</Typography>
+                  <Typography variant="body2" color={txn.amount < 0 ? "error" : "success.main"}>
+                    {txn.amount < 0 ? "-" : "+"}${Math.abs(txn.amount).toFixed(2)}
+                  </Typography>
+                  <Typography variant="caption" color="textSecondary">{txn.date}</Typography>
+                </Box>
               </motion.div>
             ))
           )}
         </Paper>
+
 
         {/* Diamond Progress Panel */}
         <Paper
