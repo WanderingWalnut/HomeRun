@@ -2,10 +2,21 @@ import React from "react";
 import { AppBar, Toolbar, Typography, Button, Box } from "@mui/material";
 import logo from "../assets/logo.png";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 
 export default function Navbar() {
+  const navigate = useNavigate();
+
   const handleLogout = () => {
+    // Clear any stored tokens or state
+    localStorage.removeItem("plaid_access_token");
+    localStorage.removeItem("lastSavedWeek");
+
+    // Log the action
     console.log("Logging out...");
+
+    // Navigate to home page
+    navigate("/");
   };
 
   return (
@@ -21,7 +32,11 @@ export default function Navbar() {
       }}
     >
       <Toolbar>
-        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }}>
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5 }}
+        >
           <Typography
             variant="h5"
             sx={{
@@ -34,15 +49,24 @@ export default function Navbar() {
             <img
               src={logo}
               alt="Logo"
-              style={{ height: "50px", marginRight: "15px", borderRadius: "8px", border: "2px solid white" }}
+              style={{
+                height: "50px",
+                marginRight: "15px",
+                borderRadius: "8px",
+                border: "2px solid white",
+              }}
             />
-            HomeRun 
+            HomeRun
           </Typography>
         </motion.div>
 
         <Box sx={{ flexGrow: 1 }} />
 
-        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }}>
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5 }}
+        >
           <Button
             color="inherit"
             onClick={handleLogout}
@@ -52,7 +76,10 @@ export default function Navbar() {
               backgroundColor: "rgba(255,255,255,0.2)",
               borderRadius: "8px",
               px: 3,
-              '&:hover': { backgroundColor: "rgba(255,255,255,0.4)", color: "#ff6c6c" },
+              "&:hover": {
+                backgroundColor: "rgba(255,255,255,0.4)",
+                color: "#ff6c6c",
+              },
             }}
           >
             Logout
