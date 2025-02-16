@@ -1,3 +1,4 @@
+import os 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
@@ -10,8 +11,21 @@ from plaid.model.item_public_token_exchange_request import ItemPublicTokenExchan
 from plaid.model.sandbox_public_token_create_request import SandboxPublicTokenCreateRequest
 from plaid.model.products import Products
 from plaid.model.accounts_get_request import AccountsGetRequest
+from pydantic import BaseModel
+import requests
+from fastapi.middleware.cors import CORSMiddleware
+
 
 app = FastAPI()
+
+# Allow all origins for testing; in production, restrict this to your actual front end domains.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Replace with specific origins in production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Define a Pydantic model for endpoints that require an access token.
 class AccessTokenRequest(BaseModel):
@@ -25,6 +39,18 @@ class UserRequest(AccessTokenRequest):
 class CreateUserRequest(BaseModel):
     email: str
     password: str
+
+# Make sure your Firebase API key is available in your environment
+FIREBASE_API_KEY = os.getenv("FIREBASE_API_KEY")
+if not FIREBASE_API_KEY:
+    raise Exception("FIREBASE_API_KEY is not set in your environment.")
+
+# Pydantic model for login requests
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
 
 @app.get("/")
 async def home():
@@ -120,18 +146,34 @@ async def get_transactions(data: AccessTokenRequest):
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/api/update_progress")
-async def update_progress(data: AccessTokenRequest):
+async def update_progress(data: UserRequest):
+    """
+    Calculates the user's weekly progress toward their savings target using Plaid transactions,
+    then stores that data in Firestore under the authenticated user's document.
+    
+    The request expects:
+      - access_token: the Plaid access token
+      - firebase_token: a Firebase ID token obtained after the user signs in
+    """
     try:
+        # Verify Firebase token and get the UID
+        decoded_token = auth.verify_id_token(data.firebase_token)
+        uid = decoded_token.get("uid")
+        if not uid:
+            raise HTTPException(status_code=401, detail="Unable to verify user.")
+
         access_token = data.access_token
         if not access_token:
             raise HTTPException(status_code=400, detail="Access token is required")
         
+        # Retrieve account details from Plaid (checking/savings only)
         accounts_req = AccountsGetRequest(access_token=access_token)
         accounts_response = plaid_client.accounts_get(accounts_req)
         accounts = accounts_response.to_dict().get("accounts", [])
         account_types = {acc["account_id"]: acc.get("subtype")
                          for acc in accounts if acc.get("subtype") in ["checking", "savings"]}
         
+        # Fetch transactions (last 30 days) and filter for the past 7 days from our accounts
         transactions = fetch_transactions(access_token)
         if transactions is None:
             raise HTTPException(status_code=500, detail="Failed to fetch transactions")
@@ -148,15 +190,25 @@ async def update_progress(data: AccessTokenRequest):
             if txn_date >= week_ago and txn.get("account_id") in account_types:
                 weekly_transactions.append(txn)
         
+        # Define your parameters
         daily_limit = 50.0          # Daily spending limit for checking accounts.
         weekly_target = 250.0        # Weekly savings target.
         down_payment_target = 20000.0  # Overall savings goal.
+        
+        # Calculate progress using your helper function
         progress = calculate_progress_with_accounts(weekly_transactions, daily_limit, weekly_target, account_types, down_payment_target)
         
-        # Optionally, you can store progress in Firestore here.
+        # Store the Plaid data (progress, access token, timestamp) under the user's document in Firestore
+        db.collection("users").document(uid).set({
+            "plaid_progress": progress,
+            "plaid_access_token": access_token,
+            "last_updated": datetime.now().isoformat()
+        }, merge=True)
+        
         return JSONResponse(content=progress)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
 
 def calculate_progress_with_accounts(transactions, daily_limit, weekly_target, account_types, down_payment_target):
     from collections import defaultdict
@@ -203,6 +255,33 @@ async def create_user(request: CreateUserRequest):
             password=request.password
         )
         return JSONResponse(content={"uid": user.uid, "email": user.email})
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    
+
+@app.post("/api/validate_user")
+async def validate_user(login: LoginRequest):
+    """
+    Validates a user's email and password against Firebase Authentication using the REST API.
+    Returns the ID token and UID if valid.
+    """
+    try:
+        url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={FIREBASE_API_KEY}"
+        payload = {
+            "email": login.email,
+            "password": login.password,
+            "returnSecureToken": True
+        }
+        response = requests.post(url, json=payload)
+        if response.status_code == 200:
+            data = response.json()
+            return JSONResponse(content={
+                "idToken": data["idToken"],
+                "uid": data["localId"],
+                "email": data["email"]
+            })
+        else:
+            raise HTTPException(status_code=400, detail=response.json())
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 

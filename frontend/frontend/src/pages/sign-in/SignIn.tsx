@@ -12,7 +12,7 @@ import MuiCard from '@mui/material/Card';
 import { styled } from '@mui/material/styles';
 import ForgotPassword from './components/ForgotPassword';
 import AppTheme from '../shared-theme/AppTheme';
-import { Link as RouterLink } from "react-router-dom";
+import { Link as RouterLink, useNavigate } from "react-router-dom";
 import logo from '../../assets/logo.png';
 
 const Card = styled(MuiCard)(({ theme }) => ({
@@ -64,6 +64,9 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
   const [passwordErrorMessage, setPasswordErrorMessage] = React.useState('');
   const [open, setOpen] = React.useState(false);
 
+  // useNavigate for redirecting after successful login
+  const navigate = useNavigate();
+
   const handleClickOpen = () => {
     setOpen(true);
   };
@@ -72,16 +75,50 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
     setOpen(false);
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    if (emailError || passwordError) {
-      event.preventDefault();
+  // Updated handleSubmit to validate inputs, then call the backend endpoint for sign in.
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!validateInputs()) {
       return;
     }
     const data = new FormData(event.currentTarget);
-    console.log({
-      email: data.get('email'),
-      password: data.get('password'),
-    });
+    const email = data.get('email');
+    const password = data.get('password');
+
+    // Call the backend /api/validate_user endpoint.
+    try {
+      const response = await fetch('http://localhost:8000/api/validate_user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email, password })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Sign in error:", errorData);
+        // Optionally, display an error message on the page.
+        return;
+      }
+
+      const result = await response.json();
+      console.log("Login successful:", result);
+      // result contains idToken, uid, and email.
+
+      // Store the Firebase ID token in local storage (or in a context for global state)
+      localStorage.setItem("firebaseIdToken", result.idToken);
+      localStorage.setItem("uid", result.uid);
+
+      // Optionally, you could also store user info in your global state (e.g., with Context or Redux)
+      
+      // Redirect the user to the dashboard or home page.
+      navigate('/MainPage'); // Adjust the path as needed
+
+    } catch (err) {
+      console.error("Error during sign in:", err);
+    }
   };
 
   const validateInputs = () => {
@@ -168,7 +205,6 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
                 type="password"
                 id="password"
                 autoComplete="current-password"
-                autoFocus
                 required
                 fullWidth
                 variant="outlined"
@@ -180,7 +216,6 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
               type="submit"
               fullWidth
               variant="contained"
-              onClick={validateInputs}
             >
               Sign in
             </Button>
