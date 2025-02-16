@@ -32,7 +32,7 @@ function DiamondProgress({ value = 0, size = 300, strokeWidth = 10 }) {
             </feMerge>
           </filter>
         </defs>
-        <image href={logo} x="0" y="20" height="50" width="100" opacity="1" />
+        <image href={logo} x="0" y="10" height="70" width="100" opacity="1" />
         <path d="M 50,0 L 100,50 L 50,100 L 0,50 Z" fill="none" stroke="#ccc" strokeWidth={strokeWidth} strokeLinejoin="round" strokeLinecap="round" />
         <path d="M 50,0 L 100,50 L 50,100 L 0,50 Z" fill="none" stroke="url(#diamondGradient)" strokeWidth={strokeWidth} strokeLinejoin="round" strokeLinecap="round" strokeDasharray={DIAMOND_PERIMETER} strokeDashoffset={offset} filter="url(#diamondGlow)" style={{ transition: "stroke-dashoffset 0.4s ease" }} />
       </svg>
