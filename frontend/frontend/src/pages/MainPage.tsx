@@ -48,17 +48,24 @@ export default function MainPage() {
     amount: number;
     date: string;
   };
-  
+
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
 
   // User Goal Inputs
-  const [housePrice, setHousePrice] = useState<number>(300000); // Default $300,000
+  const [housePrice, setHousePrice] = useState<number>(100000); // Default $100,000
   const [downpaymentPercent, setDownpaymentPercent] = useState<number>(20); // Default 20%
-  const [savedAmount, setSavedAmount] = useState<number>(0); // Tracks savings
+  const [years, setYears] = useState<number>(5); // Default 5 years to reach the goal
+  const [savedAmount, setSavedAmount] = useState<number>(0);
+  
   const downpaymentGoal = (housePrice * downpaymentPercent) / 100;
+  const weeksLeft = years * 52; // Total weeks to reach goal
+  const weeklyTarget = downpaymentGoal / weeksLeft; // Weekly savings target
 
-  // Fetch Transactions (Simulated API Call)
+  // Home Run Counter
+  const [homeRunsLeft, setHomeRunsLeft] = useState<number>(weeksLeft);
+  const [weeklySavings, setWeeklySavings] = useState<number>(0);
+
   useEffect(() => {
     setTimeout(() => {
       setTransactions(mockTransactions);
@@ -66,7 +73,6 @@ export default function MainPage() {
     }, 1000);
   }, []);
 
-  // Calculate Progress Based on Savings & Expenses
   useEffect(() => {
     let totalSaved = 0;
     transactions.forEach((txn) => {
@@ -76,6 +82,25 @@ export default function MainPage() {
   }, [transactions]);
 
   const progress = Math.min(100, (savedAmount / downpaymentGoal) * 100);
+
+  // Check if weekly target is met
+  useEffect(() => {
+    const today = new Date();
+    const currentWeek = Math.floor(today.getTime() / (1000 * 60 * 60 * 24 * 7));
+
+    const lastSavedWeek = localStorage.getItem("lastSavedWeek");
+
+    if (lastSavedWeek && Number(lastSavedWeek) === currentWeek) {
+      return; // Don't reset if it's still the same week
+    }
+
+    localStorage.setItem("lastSavedWeek", String(currentWeek));
+
+    if (weeklySavings >= weeklyTarget) {
+      setHomeRunsLeft((prev) => Math.max(0, prev - 1));
+      setWeeklySavings(0);
+    }
+  }, [weeklySavings]);
 
   return (
     <Box>
@@ -88,23 +113,12 @@ export default function MainPage() {
           Set Your Home Buying Goal
         </Typography>
         <Box display="flex" gap={3}>
-          <TextField
-            label="Total House Price ($)"
-            type="number"
-            fullWidth
-            value={housePrice}
-            onChange={(e) => setHousePrice(Number(e.target.value))}
-          />
-          <TextField
-            label="Downpayment (%)"
-            type="number"
-            fullWidth
-            value={downpaymentPercent}
-            onChange={(e) => setDownpaymentPercent(Number(e.target.value))}
-          />
+          <TextField label="Total House Price ($)" type="number" fullWidth value={housePrice} onChange={(e) => setHousePrice(Number(e.target.value))} />
+          <TextField label="Downpayment (%)" type="number" fullWidth value={downpaymentPercent} onChange={(e) => setDownpaymentPercent(Number(e.target.value))} />
+          <TextField label="Years to Save" type="number" fullWidth value={years} onChange={(e) => setYears(Number(e.target.value))} />
         </Box>
         <Typography variant="body1" color="textSecondary" mt={2}>
-          Downpayment Goal: <strong>${downpaymentGoal.toLocaleString()}</strong>
+          Downpayment Goal: <strong>${downpaymentGoal.toLocaleString()}</strong> | Weeks Left: <strong>{homeRunsLeft}</strong> | Weekly Target: <strong>${weeklyTarget.toFixed(2)}</strong>
         </Typography>
       </Paper>
 
@@ -119,36 +133,16 @@ export default function MainPage() {
             <CircularProgress />
           ) : (
             transactions.map((txn) => (
-              <motion.div
-                key={txn.id}
-                initial={{ opacity: 0, x: -50 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5 }}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  marginBottom: "10px",
-                  padding: "10px",
-                  borderRadius: "8px",
-                  backgroundColor: txn.amount < 0 ? "#ffebee" : "#e8f5e9",
-                  boxShadow: "0px 2px 5px rgba(0, 0, 0, 0.1)",
-                }}
-              >
-                <i className={txn.amount < 0 ? "bi bi-cart-x text-danger" : "bi bi-wallet text-success"} style={{ fontSize: "18px", marginRight: "12px" }}></i>
-                <Box>
-                  <Typography variant="body1" fontWeight="bold">{txn.description}</Typography>
-                  <Typography variant="body2" color={txn.amount < 0 ? "error" : "success.main"}>
-                    {txn.amount < 0 ? "-" : "+"}${Math.abs(txn.amount).toFixed(2)}
-                  </Typography>
-                  <Typography variant="caption" color="textSecondary">{txn.date}</Typography>
-                </Box>
+              <motion.div key={txn.id} initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }} style={{ marginBottom: "10px", padding: "10px", borderRadius: "8px", backgroundColor: txn.amount < 0 ? "#ffebee" : "#e8f5e9" }}>
+                <Typography variant="body1" fontWeight="bold">{txn.description}</Typography>
+                <Typography variant="body2">{txn.amount < 0 ? "-" : "+"}${Math.abs(txn.amount).toFixed(2)}</Typography>
               </motion.div>
             ))
           )}
         </Paper>
 
         {/* Progress Panel */}
-        <Paper elevation={3} sx={{ width: "800px", height: "500px", p: 3, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+        <Paper elevation={3} sx={{ width: "800px", height: "500px", p: 3 }}>
           <Typography variant="h5" fontWeight="bold" mb={2} textAlign="center">
             Progress ({progress.toFixed(2)}%)
           </Typography>
